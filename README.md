@@ -9,6 +9,9 @@ A REST API-based flight reservation system built with Spring Boot and PostgreSQL
 - **Database Integration**: PostgreSQL for production, H2 for testing
 - **RESTful API**: Clean and intuitive endpoints for all operations
 - **Data Validation**: Comprehensive validation for ticket information
+- **Containerization**: Docker-ready with Kubernetes deployment configurations
+- **Development Ready**: Includes DevTools for enhanced development experience
+- **Testing**: Comprehensive integration tests with H2 in-memory database
 
 ## Technology Stack
 
@@ -18,14 +21,28 @@ A REST API-based flight reservation system built with Spring Boot and PostgreSQL
 - **Build Tool**: Gradle
 - **Java Version**: 17
 - **Additional Libraries**: Lombok for boilerplate reduction
+- **Containerization**: Docker & Kubernetes ready
+- **Development Tools**: Spring Boot DevTools
 
 ## Getting Started
 
 ### Prerequisites
 
+#### For Local Development
+
 - Java 17 or higher
 - PostgreSQL database server
 - Gradle (or use included wrapper)
+
+#### For Docker Deployment
+
+- Docker
+- Docker Compose (optional, for easier setup)
+
+#### For Kubernetes Deployment
+
+- Kubernetes cluster (local or cloud)
+- kubectl CLI tool
 
 ### Database Setup
 
@@ -33,12 +50,16 @@ A REST API-based flight reservation system built with Spring Boot and PostgreSQL
 2. Update database credentials in `src/main/resources/application.properties` if needed:
 
    ```properties
-   spring.datasource.url=jdbc:postgresql://localhost:5432/flightdb
+   spring.datasource.url=jdbc:postgresql://postgres:5432/flightdb
    spring.datasource.username=postgres
    spring.datasource.password=password
    ```
 
+   **Note**: The default configuration uses `postgres` as the host for Docker/Kubernetes deployment. For local development, change `postgres` to `localhost`.
+
 ### Running the Application
+
+#### Option 1: Local Development
 
 1. Clone the repository
 2. Navigate to the project directory
@@ -50,6 +71,34 @@ A REST API-based flight reservation system built with Spring Boot and PostgreSQL
 
 4. The application will start on `http://localhost:8080`
 
+#### Option 2: Docker
+
+1. Build the application:
+
+   ```bash
+   ./gradlew build
+   ```
+
+2. Build the Docker image:
+
+   ```bash
+   docker build -t flightreservation .
+   ```
+
+3. Run with Docker Compose (PostgreSQL included):
+
+   ```bash
+   docker-compose up
+   ```
+
+#### Option 3: Kubernetes
+
+Deploy the application to Kubernetes:
+
+```bash
+kubectl apply -f k8s/
+```
+
 ### Running Tests
 
 Execute the test suite with:
@@ -57,6 +106,8 @@ Execute the test suite with:
 ```bash
 ./gradlew test
 ```
+
+Tests use H2 in-memory database for isolation and faster execution.
 
 ## API Endpoints
 
@@ -140,9 +191,33 @@ src/
 
 The application uses PostgreSQL as the primary database. Key configuration properties:
 
-- **Database URL**: `jdbc:postgresql://localhost:5432/flightdb`
-- **Server Port**: 8080
-- **JPA Settings**: DDL auto-update enabled, SQL logging enabled
+### Production Configuration (`application.properties`)
+
+```properties
+spring.application.name=flightreservation
+spring.datasource.url=jdbc:postgresql://postgres:5432/flightdb
+spring.datasource.username=postgres
+spring.datasource.password=password
+spring.jpa.hibernate.ddl-auto=update
+spring.jpa.show-sql=true
+spring.jpa.properties.hibernate.dialect=org.hibernate.dialect.PostgreSQLDialect
+server.port=8080
+```
+
+### Test Configuration (`application-test.properties`)
+
+```properties
+spring.application.name=flightreservation
+spring.datasource.url=jdbc:h2:mem:testdb;DB_CLOSE_DELAY=-1
+spring.datasource.driverClassName=org.h2.Driver
+spring.datasource.username=sa
+spring.datasource.password=
+spring.jpa.hibernate.ddl-auto=create-drop
+spring.jpa.show-sql=true
+spring.jpa.properties.hibernate.dialect=org.hibernate.dialect.H2Dialect
+spring.h2.console.enabled=true
+server.port=8080
+```
 
 ## Development
 
@@ -159,6 +234,25 @@ The project includes configuration for:
 - IntelliJ IDEA
 - VS Code
 - Eclipse/STS
+
+### Docker Configuration
+
+The project includes a `Dockerfile` that uses:
+
+- **Base Image**: `eclipse-temurin:17-jre-alpine`
+- **Volume**: `/tmp` for temporary files
+- **Port**: 8080 (exposed via service configuration)
+
+### Kubernetes Deployment
+
+The `k8s/` directory contains:
+
+- `deployment.yaml` - Application deployment with 2 replicas
+- `service.yaml` - Service configuration
+- `postgres.yaml` - PostgreSQL database deployment
+- `flightreservation-service.yaml` - Application service
+
+**Container Registry**: `ghcr.io/guy-ghis/flightreservation:latest`
 
 ## Contributing
 
