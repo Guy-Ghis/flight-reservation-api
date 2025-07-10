@@ -1,28 +1,56 @@
 # flight-reservation-api
 
-A REST API-based flight reservation system built with Spring Boot and PostgreSQL for managing flight ticket bookings.
+A full-stack flight reservation system with a Spring Boot REST API backend and React frontend for managing flight ticket bookings.
 
 ## Features
 
-- **Ticket Management**: Create, retrieve, and manage flight tickets
-- **Search Capabilities**: Filter tickets by booking date, destination, and departure location
-- **Database Integration**: PostgreSQL for production, H2 for testing
+### Frontend (React)
+
+- **Interactive Web Interface**: Modern React-based UI for ticket management
+- **Real-time Search**: Filter tickets by booking date, destination, and departure location
+- **Responsive Design**: Works on desktop and mobile devices
+- **Create Tickets**: User-friendly form for creating new flight tickets
+- **Ticket Display**: Grid view of all flight tickets with key information
+
+### Backend (Spring Boot API)
+
 - **RESTful API**: Clean and intuitive endpoints for all operations
+- **Database Integration**: PostgreSQL for production, H2 for testing
 - **Data Validation**: Comprehensive validation for ticket information
-- **Containerization**: Docker-ready with Kubernetes deployment configurations
+- **CORS Support**: Configured for frontend-backend communication
 - **Development Ready**: Includes DevTools for enhanced development experience
 - **Testing**: Comprehensive integration tests with H2 in-memory database
 
+### Deployment
+
+- **Containerization**: Docker-ready with Kubernetes deployment configurations
+- **Cloud Ready**: Configured for container registry deployment
+
 ## Technology Stack
 
-- **Backend**: Spring Boot 3.5.3
+### Frontend
+
+- **Framework**: React 19.1.0
+- **Build Tool**: Vite 7.0.3
+- **Development**: Hot Module Replacement (HMR)
+- **Linting**: ESLint with React-specific rules
+- **Styling**: CSS modules with modern CSS features
+
+### Backend
+
+- **Framework**: Spring Boot 3.5.3
 - **Database**: PostgreSQL (production), H2 (testing)
 - **ORM**: Spring Data JPA with Hibernate
 - **Build Tool**: Gradle
 - **Java Version**: 17
 - **Additional Libraries**: Lombok for boilerplate reduction
-- **Containerization**: Docker & Kubernetes ready
 - **Development Tools**: Spring Boot DevTools
+
+### Deployment & Infrastructure
+
+- **Containerization**: Docker & Kubernetes ready
+- **Container Registry**: GitHub Container Registry (ghcr.io)
+- **Orchestration**: Kubernetes with deployment configurations
 
 ## Getting Started
 
@@ -30,17 +58,20 @@ A REST API-based flight reservation system built with Spring Boot and PostgreSQL
 
 #### For Local Development
 
+**Backend:**
+
 - Java 17 or higher
 - PostgreSQL database server
 - Gradle (or use included wrapper)
 
+**Frontend:**
+
+- Node.js 18 or higher
+- npm or yarn package manager
+
 #### For Docker Deployment
 
 - Docker
-- Docker Compose (optional, for easier setup)
-
-#### For Kubernetes Deployment
-
 - Kubernetes cluster (local or cloud)
 - kubectl CLI tool
 
@@ -61,60 +92,87 @@ A REST API-based flight reservation system built with Spring Boot and PostgreSQL
 
 #### Option 1: Local Development
 
-1. Clone the repository
-2. Navigate to the project directory
-3. Run the application using Gradle:
+**Backend:**
+
+1. Navigate to the project root directory
+2. Run the Spring Boot application:
 
    ```bash
    ./gradlew bootRun
    ```
 
-4. The application will start on `http://localhost:8080`
+3. The backend API will start on `http://localhost:8080`
 
-#### Option 2: Docker
+**Frontend:**
 
-1. Build the application:
-
-   ```bash
-   ./gradlew build
-   ```
-
-2. Build the Docker image:
+1. Navigate to the frontend directory:
 
    ```bash
-   docker build -t flightreservation .
+   cd frontend
    ```
 
-3. Run with Docker Compose (PostgreSQL included):
+2. Install dependencies:
 
    ```bash
-   docker-compose up
+   npm install
    ```
 
-#### Option 3: Kubernetes
+3. Start the development server:
 
-Deploy the application to Kubernetes:
+   ```bash
+   npm run dev
+   ```
+
+4. The frontend will start on `http://localhost:5173`
+
+#### Option 2: Docker/Kubernetes Deployment
+
+**Build the backend:**
+
+```bash
+./gradlew build
+docker build -t flightreservation .
+```
+
+**Deploy to Kubernetes:**
 
 ```bash
 kubectl apply -f k8s/
 ```
 
+The application will be available through the Kubernetes service endpoint.
+
 ### Running Tests
 
-Execute the test suite with:
+**Backend Tests:**
 
 ```bash
 ./gradlew test
 ```
 
-Tests use H2 in-memory database for isolation and faster execution.
+**Frontend Tests:**
+
+```bash
+cd frontend
+npm run lint
+```
+
+Backend tests use H2 in-memory database for isolation and faster execution.
 
 ## API Endpoints
 
 ### Base URL
 
+**Local Development:**
+
 ```html
 http://localhost:8080/api/tickets
+```
+
+**Kubernetes/Production:**
+
+```html
+http://[service-endpoint]/api/tickets
 ```
 
 ### Available Endpoints
@@ -171,27 +229,39 @@ curl "http://localhost:8080/api/tickets/by-date?date=2024-01-15"
 ## Project Structure
 
 ```plaintext
-src/
-├── main/
-│   ├── java/com/example/flightreservation/
-│   │   ├── controller/          # REST controllers
-│   │   ├── entity/              # JPA entities
-│   │   ├── repository/          # Data repositories
-│   │   ├── service/             # Business logic
-│   │   └── config/              # Configuration classes
-│   └── resources/
-│       ├── application.properties
-│       ├── static/
-│       └── templates/
-└── test/
-    └── java/                    # Test classes
+├── src/                         # Backend (Spring Boot)
+│   ├── main/
+│   │   ├── java/com/example/flightreservation/
+│   │   │   ├── controller/      # REST controllers
+│   │   │   ├── entity/          # JPA entities
+│   │   │   ├── repository/      # Data repositories
+│   │   │   ├── service/         # Business logic
+│   │   │   └── config/          # Configuration classes
+│   │   └── resources/
+│   │       └── application.properties
+│   └── test/
+│       └── java/                # Test classes
+├── frontend/                    # Frontend (React)
+│   ├── src/
+│   │   ├── App.jsx             # Main application component
+│   │   ├── App.css             # Application styles
+│   │   ├── main.jsx            # React entry point
+│   │   └── assets/             # Static assets
+│   ├── public/                 # Public assets
+│   ├── package.json            # Node.js dependencies
+│   └── vite.config.js          # Vite configuration
+├── k8s/                        # Kubernetes deployment files
+├── build.gradle                # Backend build configuration
+└── Dockerfile                  # Container image definition
 ```
 
 ## Configuration
 
+### Backend Configuration
+
 The application uses PostgreSQL as the primary database. Key configuration properties:
 
-### Production Configuration (`application.properties`)
+#### Production Configuration (`application.properties`)
 
 ```properties
 spring.application.name=flightreservation
@@ -204,7 +274,7 @@ spring.jpa.properties.hibernate.dialect=org.hibernate.dialect.PostgreSQLDialect
 server.port=8080
 ```
 
-### Test Configuration (`application-test.properties`)
+#### Test Configuration (`application-test.properties`)
 
 ```properties
 spring.application.name=flightreservation
@@ -219,21 +289,53 @@ spring.h2.console.enabled=true
 server.port=8080
 ```
 
+### Frontend Configuration
+
+The React frontend is configured with Vite and includes:
+
+- **Development Server**: `http://localhost:5173`
+- **API Base URL**: Configured in `App.jsx` (currently set to Kubernetes service endpoint)
+- **Build Output**: `dist/` directory for production builds
+- **Hot Module Replacement**: Enabled for development
+
+**Important Notes:**
+
+- Update the `API_BASE_URL` in `frontend/src/App.jsx` to match your backend deployment:
+  - Local development: `http://localhost:8080/api/tickets`
+  - Production: Update to match your service endpoint
+- The frontend currently expects a `/search` endpoint that is not implemented in the backend. The search functionality uses individual endpoints (`/by-date`, `/by-destination`, `/by-kickoff`) instead.
+
 ## Development
 
 ### Building the Project
 
+**Backend:**
+
 ```bash
 ./gradlew build
+```
+
+**Frontend:**
+
+```bash
+cd frontend
+npm run build
 ```
 
 ### IDE Setup
 
 The project includes configuration for:
 
-- IntelliJ IDEA
-- VS Code
-- Eclipse/STS
+- **VS Code**: Settings in `.vscode/settings.json`
+- **IntelliJ IDEA**: Standard Gradle project structure
+- **Eclipse/STS**: Standard Gradle project structure
+
+### Development Workflow
+
+1. **Start Backend**: `./gradlew bootRun`
+2. **Start Frontend**: `cd frontend && npm run dev`
+3. **Access Frontend**: `http://localhost:5173`
+4. **Access Backend API**: `http://localhost:8080/api/tickets`
 
 ### Docker Configuration
 
@@ -253,6 +355,13 @@ The `k8s/` directory contains:
 - `flightreservation-service.yaml` - Application service
 
 **Container Registry**: `ghcr.io/guy-ghis/flightreservation:latest`
+
+## Known Issues & TODO
+
+- [ ] Frontend search functionality expects `/search` endpoint not implemented in backend
+- [ ] Frontend API base URL is hardcoded to Kubernetes service endpoint
+- [ ] No Docker Compose configuration for easy local development
+- [ ] Frontend build process not integrated with backend build
 
 ## Contributing
 
