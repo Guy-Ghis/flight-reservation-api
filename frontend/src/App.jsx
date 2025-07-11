@@ -1,90 +1,96 @@
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 import './App.css'
+import { TicketControllerApi, Configuration } from './api';
+import {
+  QueryClient,
+  QueryClientProvider,
+  useQuery,
+  useMutation,
+  useQueryClient,
+} from '@tanstack/react-query';
+
+const config = new Configuration({ basePath: 'http://10.153.115.208:30082' });
+const api = new TicketControllerApi(config);
+const queryClient = new QueryClient();
+
+function AppWrapper() {
+  return (
+    <QueryClientProvider client={queryClient}>
+      <App />
+    </QueryClientProvider>
+  );
+}
 
 function App() {
-  const [tickets, setTickets] = useState([])
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState(null)
-  const [showCreateForm, setShowCreateForm] = useState(false)
+  const [showCreateForm, setShowCreateForm] = useState(false);
   const [searchFilters, setSearchFilters] = useState({
     destination: '',
     kickoff: '',
     date: ''
-  })
+  });
+  const queryClient = useQueryClient();
 
-  const API_BASE_URL = 'http://10.153.115.208:30080/api/tickets'
-
-  useEffect(() => {
-    fetchTickets()
-  }, [])
-
-  const fetchTickets = async () => {
-    try {
-      setLoading(true)
-      const response = await fetch(API_BASE_URL)
-      if (!response.ok) {
-        throw new Error('Failed to fetch tickets')
+  // Fetch tickets (all or by search)
+  const {
+    data: tickets = [],
+    isLoading,
+    isError,
+    error,
+    refetch,
+  } = useQuery({
+    queryKey: ['tickets', searchFilters],
+    queryFn: async () => {
+      if (searchFilters.destination) {
+        return api.getByDestination({ destination: searchFilters.destination });
+      } else if (searchFilters.kickoff) {
+        return api.getByKickoff({ kickoff: searchFilters.kickoff });
+      } else if (searchFilters.date) {
+        return api.getByDate({ date: new Date(searchFilters.date) });
+      } else {
+        return api.getAllTickets();
       }
-      const data = await response.json()
-      setTickets(data)
-    } catch (err) {
-      setError(err.message)
-    } finally {
-      setLoading(false)
-    }
-  }
+    },
+  });
 
-  const createTicket = async (ticketData) => {
-    try {
-      const response = await fetch(API_BASE_URL, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(ticketData),
-      })
-      if (!response.ok) {
-        throw new Error('Failed to create ticket')
-      }
-      await fetchTickets()
-      setShowCreateForm(false)
-    } catch (err) {
-      setError(err.message)
-    }
-  }
+  // Create ticket mutation
+  const createMutation = useMutation({
+    mutationFn: (ticketData) => api.createTicket({ ticket: ticketData }),
+    onSuccess: () => {
+      queryClient.invalidateQueries(['tickets']);
+      setShowCreateForm(false);
+    },
+    onError: (err) => {
+      alert('Error creating ticket: ' + err.message);
+    },
+  });
 
-  const searchTickets = async () => {
-    try {
-      setLoading(true)
-      const params = new URLSearchParams()
-      if (searchFilters.destination) params.append('destination', searchFilters.destination)
-      if (searchFilters.kickoff) params.append('kickoff', searchFilters.kickoff)
-      if (searchFilters.date) params.append('date', searchFilters.date)
+  // Delete ticket mutation
+  const deleteMutation = useMutation({
+    mutationFn: (id) => api.deleteTicket({ id }),
+    onSuccess: () => {
+      queryClient.invalidateQueries(['tickets']);
+    },
+    onError: (err) => {
+      alert('Error deleting ticket: ' + err.message);
+    },
+  });
 
-      const response = await fetch(`${API_BASE_URL}/search?${params}`)
-      if (!response.ok) {
-        throw new Error('Failed to search tickets')
-      }
-      const data = await response.json()
-      setTickets(data)
-    } catch (err) {
-      setError(err.message)
-    } finally {
-      setLoading(false)
-    }
-  }
+  const handleSearch = (e) => {
+    e.preventDefault();
+    refetch();
+  };
 
   const clearSearch = () => {
-    setSearchFilters({ destination: '', kickoff: '', date: '' })
-    fetchTickets()
+    setSearchFilters({ destination: '', kickoff: '', date: '' });
+    refetch();
+  };
+
+  if (isLoading) {
+    return <div className="loading">Loading tickets...</div>;
   }
 
-  if (loading) {
-    return <div className="loading">Loading tickets...</div>
-  }
-
-  if (error) {
-    return <div className="error">Error: {error}</div>
+  if (isError) {
+    return <div className="error">Error: {error.message}</div>;
   }
 
   return (
@@ -95,7 +101,7 @@ function App() {
 
       <main className="main">
         <div className="controls">
-          <button 
+          <button
             className="btn btn-primary"
             onClick={() => setShowCreateForm(true)}
           >
@@ -103,36 +109,39 @@ function App() {
           </button>
         </div>
 
-        <div className="search-section">
+        <div className="section">
           <h2>Search Tickets</h2>
-          <div className="search-filters">
+          <form className="search-filters" onSubmit={handleSearch}>
             <input
               type="text"
               placeholder="Destination"
               value={searchFilters.destination}
-              onChange={(e) => setSearchFilters({...searchFilters, destination: e.target.value})}
+              onChange={(e) => setSearchFilters({ ...searchFilters, destination: e.target.value })}
               className="search-input"
+              aria-label="Search by destination"
             />
             <input
               type="text"
               placeholder="Kickoff"
               value={searchFilters.kickoff}
-              onChange={(e) => setSearchFilters({...searchFilters, kickoff: e.target.value})}
+              onChange={(e) => setSearchFilters({ ...searchFilters, kickoff: e.target.value })}
               className="search-input"
+              aria-label="Search by kickoff"
             />
             <input
               type="date"
               value={searchFilters.date}
-              onChange={(e) => setSearchFilters({...searchFilters, date: e.target.value})}
+              onChange={(e) => setSearchFilters({ ...searchFilters, date: e.target.value })}
               className="search-input"
+              aria-label="Search by date"
             />
-            <button onClick={searchTickets} className="btn btn-secondary">
+            <button type="submit" className="btn btn-secondary">
               Search
             </button>
-            <button onClick={clearSearch} className="btn btn-clear">
+            <button type="button" onClick={clearSearch} className="btn btn-clear">
               Clear
             </button>
-          </div>
+          </form>
         </div>
 
         <div className="tickets-section">
@@ -143,35 +152,53 @@ function App() {
                 <h3>{ticket.passengerName}</h3>
                 <p><strong>From:</strong> {ticket.kickoff}</p>
                 <p><strong>To:</strong> {ticket.destination}</p>
-                <p><strong>Date:</strong> {ticket.bookingDate}</p>
+                <p><strong>Date:</strong> {ticket.bookingDate instanceof Date
+                  ? ticket.bookingDate.toLocaleDateString()
+                  : (typeof ticket.bookingDate === 'string' && !isNaN(Date.parse(ticket.bookingDate))
+                      ? new Date(ticket.bookingDate).toLocaleDateString()
+                      : ticket.bookingDate)
+                }</p>
+                <button
+                  className="btn btn-clear"
+                  onClick={() => {
+                    if (window.confirm('Are you sure you want to delete this ticket?')) {
+                      deleteMutation.mutate(ticket.id);
+                    }
+                  }}
+                  style={{ marginTop: '1rem' }}
+                  disabled={deleteMutation.isLoading}
+                >
+                  {deleteMutation.isLoading ? 'Deleting...' : 'Delete'}
+                </button>
               </div>
             ))}
           </div>
         </div>
 
         {showCreateForm && (
-          <CreateTicketForm 
-            onSubmit={createTicket}
+          <CreateTicketForm
+            onSubmit={(data) => createMutation.mutate(data)}
             onCancel={() => setShowCreateForm(false)}
+            isLoading={createMutation.isLoading}
           />
         )}
       </main>
     </div>
-  )
+  );
 }
 
-function CreateTicketForm({ onSubmit, onCancel }) {
+function CreateTicketForm({ onSubmit, onCancel, isLoading }) {
   const [formData, setFormData] = useState({
     passengerName: '',
     destination: '',
     kickoff: '',
     bookingDate: ''
-  })
+  });
 
   const handleSubmit = (e) => {
-    e.preventDefault()
-    onSubmit(formData)
-  }
+    e.preventDefault();
+    onSubmit(formData);
+  };
 
   return (
     <div className="modal-overlay">
@@ -179,57 +206,61 @@ function CreateTicketForm({ onSubmit, onCancel }) {
         <h2>Create New Ticket</h2>
         <form onSubmit={handleSubmit} className="ticket-form">
           <div className="form-group">
-            <label>Passenger Name:</label>
+            <label htmlFor="passengerName">Passenger Name:</label>
             <input
+              id="passengerName"
               type="text"
               value={formData.passengerName}
-              onChange={(e) => setFormData({...formData, passengerName: e.target.value})}
+              onChange={(e) => setFormData({ ...formData, passengerName: e.target.value })}
               required
               className="form-input"
             />
           </div>
           <div className="form-group">
-            <label>Destination:</label>
+            <label htmlFor="destination">Destination:</label>
             <input
+              id="destination"
               type="text"
               value={formData.destination}
-              onChange={(e) => setFormData({...formData, destination: e.target.value})}
+              onChange={(e) => setFormData({ ...formData, destination: e.target.value })}
               required
               className="form-input"
             />
           </div>
           <div className="form-group">
-            <label>Kickoff:</label>
+            <label htmlFor="kickoff">Kickoff:</label>
             <input
+              id="kickoff"
               type="text"
               value={formData.kickoff}
-              onChange={(e) => setFormData({...formData, kickoff: e.target.value})}
+              onChange={(e) => setFormData({ ...formData, kickoff: e.target.value })}
               required
               className="form-input"
             />
           </div>
           <div className="form-group">
-            <label>Booking Date:</label>
+            <label htmlFor="bookingDate">Booking Date:</label>
             <input
+              id="bookingDate"
               type="date"
               value={formData.bookingDate}
-              onChange={(e) => setFormData({...formData, bookingDate: e.target.value})}
+              onChange={(e) => setFormData({ ...formData, bookingDate: e.target.value })}
               required
               className="form-input"
             />
           </div>
           <div className="form-actions">
-            <button type="submit" className="btn btn-primary">
-              Create Ticket
+            <button type="submit" className="btn btn-primary" disabled={isLoading}>
+              {isLoading ? 'Creating...' : 'Create Ticket'}
             </button>
-            <button type="button" onClick={onCancel} className="btn btn-secondary">
+            <button type="button" onClick={onCancel} className="btn btn-secondary" disabled={isLoading}>
               Cancel
             </button>
           </div>
         </form>
       </div>
     </div>
-  )
+  );
 }
 
-export default App
+export default AppWrapper;
