@@ -42,4 +42,10 @@ public class TicketController {
     public List<Ticket> getByKickoff(@RequestParam String kickoff) {
         return service.getTicketsByKickoff(kickoff);
     }
+
+    @DeleteMapping("/{id}")
+    public void deleteTicket(@PathVariable Long id) {
+        service.deleteTicket(id);
+    }
+
 }
