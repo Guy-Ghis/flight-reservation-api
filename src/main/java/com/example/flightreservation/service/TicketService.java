@@ -35,4 +35,11 @@ public class TicketService {
     public List<Ticket> getTicketsByKickoff(String kickoff) {
         return repository.findByKickoffContainingIgnoreCase(kickoff);
     }
+
+    public void deleteTicket(Long id) {
+        Ticket ticket = repository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Ticket not found with id: " + id));
+        repository.delete(ticket);
+    }
+
 }
