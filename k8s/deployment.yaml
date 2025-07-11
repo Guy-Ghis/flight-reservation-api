@@ -3,7 +3,7 @@ kind: Deployment
 metadata:
   name: flightreservation
 spec:
-  replicas: 2
+  replicas: 1
   selector:
     matchLabels:
       app: flightreservation
@@ -14,7 +14,8 @@ spec:
     spec:
       containers:
         - name: flightreservation
-          image: ghcr.io/guy-ghis/flightreservation:latest
+          image: ghcr.io/guy-ghis/flight:latest
+          imagePullPolicy: Always
           ports:
             - containerPort: 8080
           env:
